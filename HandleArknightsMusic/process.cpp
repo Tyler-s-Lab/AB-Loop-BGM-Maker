@@ -1,4 +1,4 @@
-/**
+ï»¿/**
 *                        HandleArknightsMusic
 *  Copyright (c) 2023  Tyler Parret Zhu
 *
@@ -23,9 +23,7 @@
 */
 #include "process.h"
 
-#ifdef HAVE_SFML
-#include <SFML/Audio.hpp>
-#endif
+#include <SFML/Audio/InputSoundFile.hpp>
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -33,83 +31,71 @@ using namespace std;
 namespace {
 
 /**
- * @brief Ò»¸öÒôÀÖ¶ÔµÄÊı¾İ½á¹¹
+ * @brief ä¸€ä¸ªéŸ³ä¹å¯¹çš„æ•°æ®ç»“æ„
 */
 struct PAIRDATA {
 	bool hasIntro;
 	bool hasLoop;
 
-#ifdef HAVE_SFML
-	sf::Int64 offset;
-	sf::Int64 length;
+	std::uint64_t offset;
+	std::uint64_t length;
 
 	PAIRDATA() :
 		hasIntro(false),
 		hasLoop(false),
 		offset(200000),
 		length(0) {}
-#else
-	PAIRDATA() :
-		hasIntro(false),
-		hasLoop(false) {}
-#endif
 };
 
 /**
- * @brief ÒôÀÖÃû¶ÔÊı¾İ½á¹¹µÄmap
+ * @brief éŸ³ä¹åå¯¹æ•°æ®ç»“æ„çš„map
 */
 std::map<std::string, PAIRDATA> g_pairs;
-
+sf::InputSoundFile sffile;
 
 /**
- * @brief ´¦Àí»ñÈ¡µÄÒ»¸öÎÄ¼şÃû
- * @param i ÎÄ¼şÃû
+ * @brief å¤„ç†è·å–çš„ä¸€ä¸ªæ–‡ä»¶å
+ * @param i æ–‡ä»¶å
 */
 void handleOneFile(const string& i) {
-	size_t pos; // ³Ğ½Óstring::findµÄ·µ»ØÖµ
-	string name; // È¥³ı¸½¼ÓÄÚÈİµÄ´¿´âµÄÒôÀÖÃû£¨m_sys_xxx_intro.wav -> m_sys_xxx£©
-	PAIRDATA tmpdata; // ÁÙÊ±ÒôÀÖ¶ÔÊı¾İ
+	size_t pos; // æ‰¿æ¥string::findçš„è¿”å›å€¼
+	string name; // å»é™¤é™„åŠ å†…å®¹çš„çº¯ç²¹çš„éŸ³ä¹åï¼ˆm_sys_xxx_intro.wav -> m_sys_xxxï¼‰
+	PAIRDATA tmpdata; // ä¸´æ—¶éŸ³ä¹å¯¹æ•°æ®
 
-	if ((pos = i.find("_intro.wav")) != string::npos) { // Æ¥Åäintro
-		// introºÍloop¶¼Æ¥Åä£¬ÎŞ·¨´¦Àí
+	if ((pos = i.find("_intro.wav")) != string::npos) { // åŒ¹é…intro
+		// introå’Œloopéƒ½åŒ¹é…ï¼Œæ— æ³•å¤„ç†
 		if (i.find("_loop.wav") != string::npos) {
 			cout << "Warning: File \'" << i << "\' is too complex." << endl;
 			return;
 		}
-		// È¡ÒôÀÖÃû
+		// å–éŸ³ä¹å
 		name = i.substr(0, pos);
 		tmpdata.hasIntro = true;
 
 		cout << "Find: File \'" << i << "\' as Intro \'" << name << "\'." << endl;
 
-	#ifdef HAVE_SFML
-		// intro³¤¶È¼´offset
-		sf::Music music;
-		music.openFromFile(string(".\\InputGameFiles\\") + i);
-		tmpdata.offset = music.getDuration().asMicroseconds();
-	#endif
+		// introé•¿åº¦å³offset
+		if (sffile.openFromFile(g_inputpath / i))
+			tmpdata.offset = sffile.getSampleCount() - sffile.getSampleCount() % sffile.getChannelCount();
 	}
-	else if ((pos = i.find("_loop.wav")) != string::npos) { // Æ¥Åäloop
+	else if ((pos = i.find("_loop.wav")) != string::npos) { // åŒ¹é…loop
 		name = i.substr(0, pos);
 		tmpdata.hasLoop = true;
 
 		cout << "Find: File \'" << i << "\' as Loop \'" << name << "\'." << endl;
 
-	#ifdef HAVE_SFML
-		sf::Music music;
-		music.openFromFile(string(".\\InputGameFiles\\") + i);
-		tmpdata.length = music.getDuration().asMicroseconds();
-	#endif
+		if (sffile.openFromFile(g_inputpath / i))
+			tmpdata.length = sffile.getSampleCount() - sffile.getSampleCount() % sffile.getChannelCount();
 	}
-	else { // introºÍloop¶¼ÎŞ·¨Æ¥Åä£¬ÎŞ·¨´¦Àí
+	else { // introå’Œloopéƒ½æ— æ³•åŒ¹é…ï¼Œæ— æ³•å¤„ç†
 		cout << "Warning: File \'" << i << "\' cannot be handled." << endl;
 		return;
 	}
 
 	map<string, PAIRDATA>::iterator p = g_pairs.find(name);
 
-	
-	if (p == g_pairs.end()) { // ÒÑ¾­ÓĞ¶ÔÓ¦ÎÄ¼şÃûµÄÊı¾İ¶Ô
+
+	if (p == g_pairs.end()) { // å·²ç»æœ‰å¯¹åº”æ–‡ä»¶åçš„æ•°æ®å¯¹
 		g_pairs.emplace(name, tmpdata);
 	}
 	else {
@@ -119,9 +105,7 @@ void handleOneFile(const string& i) {
 				return;
 			}
 			p->second.hasLoop = true;
-		#ifdef HAVE_SFML
 			p->second.length = tmpdata.length;
-		#endif
 		}
 		else {
 			if (p->second.hasIntro) {
@@ -129,36 +113,33 @@ void handleOneFile(const string& i) {
 				return;
 			}
 			p->second.hasIntro = true;
-		#ifdef HAVE_SFML
 			p->second.offset = tmpdata.offset;
-		#endif
 		}
 	}
 	return;
 }
 
 
-
 /**
- * @brief ±éÀúÊäÈëÄ¿Â¼ÏÂµÄËùÓĞÎÄ¼ş
- * @return º¯ÊıÊÇ·ñ³É¹¦
+ * @brief éå†è¾“å…¥ç›®å½•ä¸‹çš„æ‰€æœ‰æ–‡ä»¶
+ * @return å‡½æ•°æ˜¯å¦æˆåŠŸ
 */
 bool getFiles() {
 	g_pairs.clear();
 
-	// ´ò¿ªÊäÈëÄ¿Â¼
-	fs::path input(".\\InputGameFiles");
+	// æ‰“å¼€è¾“å…¥ç›®å½•
+	fs::path input(g_inputpath);
 
-	// ¼ì²éÊäÈëÄ¿Â¼
+	// æ£€æŸ¥è¾“å…¥ç›®å½•
 	if (!fs::exists(input) || !fs::is_directory(input)) {
 		cout << "Cannot open directory \'InputGameFiles\'!" << endl;
 		return false;
 	}
 
-	// ±éÀúÊäÈëÄ¿Â¼
+	// éå†è¾“å…¥ç›®å½•
 	for (const fs::directory_entry& it : fs::directory_iterator(input)) {
 		if (fs::is_directory(it.status())) {
-			cout << "Warning: Find directory in Input: \'" << it.path().string() << "\'." << endl;
+			cout << "Warning: Find directory in Input: \'" << it.path() << "\'." << endl;
 		}
 		else {
 			//cout << "TEST: Get: \'" << it.path().filename().string() << "\'." << endl;
@@ -172,10 +153,22 @@ bool getFiles() {
 } // namespace
 
 
-std::string g_outputpath;
+fs::path g_outputpath;
+const fs::path g_inputpath = "InputGameFiles";
 
 
 bool process() {
+	bool flac = fs::exists("flac");
+	int flacVal = -1;
+	if (flac) {
+		ifstream flacValFile;
+		flacValFile.open("flac");
+		if (flacValFile.is_open()) {
+			flacValFile >> flacVal;
+		}
+		flacValFile.close();
+	}
+
 	if (!getFiles()) {
 		cout << "Failed to getFiles()!" << endl;
 		return false;
@@ -186,36 +179,20 @@ bool process() {
 	}
 
 	fs::create_directory(g_outputpath);
-	fs::create_directory(g_outputpath + "\\ogg");
-#ifdef HAVE_SFML
-#ifdef WRITE_METADATA
-	fs::create_directory(g_outputpath + "\\ogg_metadata");
-#endif
-#endif
-	fs::create_directory(g_outputpath + "\\wav");
-	fs::create_directory(g_outputpath + "\\done");
 
 	ofstream mylist;
-#ifdef HAVE_SFML
-	ofstream commentList;
-	commentList.open(g_outputpath + "\\comments.txt", ios::out);
-	if (!commentList.is_open()) {
-		cout << "Warning: Failed to open \'comments.txt\'." << endl;
-		return false;
-	}
-#endif
 
 	for (const pair<string, PAIRDATA>& i : g_pairs) {
 		cout << "Process: \'" << i.first << "\'" << endl;
 
 		if (!i.second.hasLoop) {
-			cout << "Warning: \'" << i.first << "\' pair has no loop and will be discarded." << endl;
+			cout << "!!!! Warning: \'" << i.first << "\' pair has no loop and will be discarded." << endl;
 			continue;
 		}
 
 		mylist.open("mylist.txt");
 		if (!mylist.is_open()) {
-			cout << "Error: Failed to open mylist.txt when handling \'" << i.first << "\'." << endl;
+			cout << "!!!! Error: Failed to open mylist.txt when handling \'" << i.first << "\'." << endl;
 			continue;
 		}
 
@@ -223,61 +200,48 @@ bool process() {
 			mylist << "file .\\\\InputGameFiles\\\\" << i.first << "_intro.wav" << endl;
 		}
 		else {
-			mylist << "file .\\\\core\\\\stempty.wav" << endl;
+			mylist << "file .\\\\stempty.wav" << endl;
 		}
 		mylist << "file .\\\\InputGameFiles\\\\" << i.first << "_loop.wav" << endl;
 		mylist << "file .\\\\fadeout.wav" << endl;
-	#ifdef HAVE_SFML
-		commentList << i.first << ": >" << i.second.offset << ":" << i.second.length << "<. " << endl;
-	#endif
-		
+
 		//ffmpeg -i i2.wav -to 2.0 -af "afade=t=out:st=0.8:d=1" output.wav
-		system((string(FFMPEG_PATH) + " -loglevel warning -y -i \".\\InputGameFiles\\" +
-			   i.first +
-			   "_loop.wav\" -to 2.0 -af \"afade=t=out:st=0.8:d=1\" fadeout.wav").c_str());
+		system((FFMPEG_PATH + " -loglevel warning -y -i \".\\InputGameFiles\\" +
+			i.first +
+			"_loop.wav\" -to 2.0 -af \"afade=t=out:st=0.8:d=1\" fadeout.wav").c_str());
 
-		system((string(FFMPEG_PATH) + " -loglevel warning -y -f concat -safe 0 -i mylist.txt -c:a copy output.wav").c_str());
-		system((string(FFMPEG_PATH) + " -loglevel warning -y -i output.wav -af \"afade=t=in:st=0:d=0.001\" -c:a libvorbis output.ogg").c_str());
-
-	#ifdef HAVE_SFML
-	#ifdef WRITE_METADATA
 		// example
 		//ffmpeg -i test.ogg -map 0 -y -codec copy -metadata "DESCRIPTION=xxxx" -metadata "TITLE=xxxname" -metadata "COPYRIGHT=HYPERGRYPH" -metadata "ORGANIZATION=ARKNIGHTS" testoutput.ogg 
 		string tmpcmd(FFMPEG_PATH);
-		tmpcmd.append(" -loglevel warning -y -i output.ogg -map 0 -codec copy -metadata OHMSSPC=\">");
+		tmpcmd.append(" -loglevel warning -y -f concat -safe 0 -i mylist.txt -af \"afade=t=in:st=0:d=0.001\"");
+		tmpcmd.append(" -metadata OHMSSPD=\"<");
 		tmpcmd.append(to_string(i.second.offset));
-		tmpcmd.append(":");
+		tmpcmd.append("|");
 		tmpcmd.append(to_string(i.second.length));
-		tmpcmd.append("<\" -metadata TITLE=\"");
+		tmpcmd.append(">\" -metadata TITLE=\"");
 		tmpcmd.append(i.first);
-		tmpcmd.append("\" -metadata COPYRIGHT=\"HYPERGRYPH\" -metadata ORGANIZATION=\"ARKNIGHTS\" outputmeta.ogg");
-		system(tmpcmd.c_str());
-	#endif
-	#endif
-
-		fs::rename(".\\output.wav", g_outputpath + "\\wav\\" + i.first + ".wav");
-		fs::rename(".\\output.ogg", g_outputpath + "\\ogg\\" + i.first + ".ogg");
-	#ifdef HAVE_SFML
-	#ifdef WRITE_METADATA
-		fs::rename(".\\outputmeta.ogg", g_outputpath + "\\ogg_metadata\\" + i.first + ".ogg");
-	#endif
-	#endif
-
-		if (i.second.hasIntro) {
-			fs::rename(".\\InputGameFiles\\" + i.first + "_intro.wav",
-					   g_outputpath + "\\done\\" + i.first + "_intro.wav");
+		tmpcmd.append("\" -metadata COPYRIGHT=\"HYPERGRYPH\" -metadata ORGANIZATION=\"ARKNIGHTS\"");
+		if (flac) {
+			tmpcmd.append(" -c:a flac");
+			if (flacVal != -1) {
+				tmpcmd.append(" -compression_level " + to_string(flacVal));
+			}
+			tmpcmd.append(" output.flac");
+			system(tmpcmd.c_str());
+			fs::rename("output.flac", g_outputpath / (i.first + ".flac"));
 		}
-		fs::rename(".\\InputGameFiles\\" + i.first + "_loop.wav",
-				   g_outputpath + "\\done\\" + i.first + "_loop.wav");
+		else {
+			tmpcmd.append(" -c:a libvorbis output.ogg");
+			system(tmpcmd.c_str());
+			fs::rename("output.ogg", g_outputpath / (i.first + ".ogg"));
+		}
+
 
 		mylist.close();
 	}
 
-	fs::remove(".\\mylist.txt");
-	fs::remove(".\\fadeout.wav");
+	fs::remove("mylist.txt");
+	fs::remove("fadeout.wav");
 
-#ifdef HAVE_SFML
-	commentList.close();
-#endif
 	return true;
 }
