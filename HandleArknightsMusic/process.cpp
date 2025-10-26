@@ -37,14 +37,9 @@ struct PAIRDATA {
 	bool hasIntro;
 	bool hasLoop;
 
-	std::uint64_t offset;
-	std::uint64_t length;
-
 	PAIRDATA() :
 		hasIntro(false),
-		hasLoop(false),
-		offset(200000),
-		length(0) {}
+		hasLoop(false) {}
 };
 
 /**
@@ -59,12 +54,12 @@ sf::InputSoundFile sffile;
 */
 void handleOneFile(const string& i) {
 	size_t pos; // 承接string::find的返回值
-	string name; // 去除附加内容的纯粹的音乐名（m_sys_xxx_intro.wav -> m_sys_xxx）
+	string name; // 去除附加内容的纯粹的音乐名（m_sys_xxx_intro.fsb -> m_sys_xxx）
 	PAIRDATA tmpdata; // 临时音乐对数据
 
-	if ((pos = i.find("_intro.wav")) != string::npos) { // 匹配intro
+	if ((pos = i.find("_intro.fsb")) != string::npos) { // 匹配intro
 		// intro和loop都匹配，无法处理
-		if (i.find("_loop.wav") != string::npos) {
+		if (i.find("_loop.fsb") != string::npos) {
 			cout << "Warning: File \'" << i << "\' is too complex." << endl;
 			return;
 		}
@@ -73,19 +68,12 @@ void handleOneFile(const string& i) {
 		tmpdata.hasIntro = true;
 
 		cout << "Find: File \'" << i << "\' as Intro \'" << name << "\'." << endl;
-
-		// intro长度即offset
-		if (sffile.openFromFile(g_inputpath / i))
-			tmpdata.offset = sffile.getSampleCount() - sffile.getSampleCount() % sffile.getChannelCount();
 	}
-	else if ((pos = i.find("_loop.wav")) != string::npos) { // 匹配loop
+	else if ((pos = i.find("_loop.fsb")) != string::npos) { // 匹配loop
 		name = i.substr(0, pos);
 		tmpdata.hasLoop = true;
 
 		cout << "Find: File \'" << i << "\' as Loop \'" << name << "\'." << endl;
-
-		if (sffile.openFromFile(g_inputpath / i))
-			tmpdata.length = sffile.getSampleCount() - sffile.getSampleCount() % sffile.getChannelCount();
 	}
 	else { // intro和loop都无法匹配，无法处理
 		cout << "Warning: File \'" << i << "\' cannot be handled." << endl;
@@ -105,7 +93,6 @@ void handleOneFile(const string& i) {
 				return;
 			}
 			p->second.hasLoop = true;
-			p->second.length = tmpdata.length;
 		}
 		else {
 			if (p->second.hasIntro) {
@@ -113,7 +100,6 @@ void handleOneFile(const string& i) {
 				return;
 			}
 			p->second.hasIntro = true;
-			p->second.offset = tmpdata.offset;
 		}
 	}
 	return;
@@ -196,28 +182,48 @@ bool process() {
 			continue;
 		}
 
+		uint64_t offset = 0, length = 0;
 		if (i.second.hasIntro) {
-			mylist << "file .\\\\InputGameFiles\\\\" << i.first << "_intro.wav" << endl;
+			system((string("python-fsb5\\extract.py -o .\\ \"InputGameFiles\\") + i.first + "_intro.fsb\"").c_str());
+			if (sffile.openFromFile(i.first + "_intro.ogg"))
+				offset = sffile.getSampleCount() - sffile.getSampleCount() % sffile.getChannelCount();
+			sffile.close();
 		}
 		else {
-			mylist << "file .\\\\stempty.wav" << endl;
+			if (sffile.openFromFile("python-fsb5\\stempty.ogg"))
+				offset = sffile.getSampleCount() - sffile.getSampleCount() % sffile.getChannelCount();
+			sffile.close();
 		}
-		mylist << "file .\\\\InputGameFiles\\\\" << i.first << "_loop.wav" << endl;
-		mylist << "file .\\\\fadeout.wav" << endl;
+		system((string("python-fsb5\\extract.py -o .\\ \"InputGameFiles\\") + i.first + "_loop.fsb\"").c_str());
+		if (sffile.openFromFile(i.first + "_loop.ogg"))
+			length = sffile.getSampleCount() - sffile.getSampleCount() % sffile.getChannelCount();
+		sffile.close();
+
 
 		//ffmpeg -i i2.wav -to 2.0 -af "afade=t=out:st=0.8:d=1" output.wav
-		system((FFMPEG_PATH + " -loglevel warning -y -i \".\\InputGameFiles\\" +
-			i.first +
-			"_loop.wav\" -to 2.0 -af \"afade=t=out:st=0.8:d=1\" fadeout.wav").c_str());
+		//system((FFMPEG_PATH + " -loglevel warning -y -i \"" + i.first + "_loop.ogg\" fadeout0.wav").c_str());
+		//system((FFMPEG_PATH + " -loglevel warning -y -i fadeout0.wav -to 2.0 -af \"afade=t=out:st=0.8:d=1\" -c:a libvorbis fadeout1.ogg").c_str());
+
+
+		if (i.second.hasIntro) {
+			mylist << "file " << i.first << "_intro.ogg" << endl;
+		}
+		else {
+			mylist << "file python-fsb5\\\\stempty.ogg" << endl;
+		}
+		mylist << "file " << i.first << "_loop.ogg" << endl;
+		//mylist << "file fadeout1.ogg" << endl;
+
+		//system((FFMPEG_PATH + " -loglevel warning -y -f concat -safe 0 -i mylist.txt -c:a libvorbis output.ogg").c_str());
 
 		// example
 		//ffmpeg -i test.ogg -map 0 -y -codec copy -metadata "DESCRIPTION=xxxx" -metadata "TITLE=xxxname" -metadata "COPYRIGHT=HYPERGRYPH" -metadata "ORGANIZATION=ARKNIGHTS" testoutput.ogg 
 		string tmpcmd(FFMPEG_PATH);
-		tmpcmd.append(" -loglevel warning -y -f concat -safe 0 -i mylist.txt -af \"afade=t=in:st=0:d=0.001\"");
+		tmpcmd.append(" -loglevel warning -y -f concat -safe 0 -i mylist.txt ");
 		tmpcmd.append(" -metadata OHMSSPD=\"<");
-		tmpcmd.append(to_string(i.second.offset));
+		tmpcmd.append(to_string(offset));
 		tmpcmd.append("|");
-		tmpcmd.append(to_string(i.second.length));
+		tmpcmd.append(to_string(length));
 		tmpcmd.append(">\" -metadata TITLE=\"");
 		tmpcmd.append(i.first);
 		tmpcmd.append("\" -metadata COPYRIGHT=\"HYPERGRYPH\" -metadata ORGANIZATION=\"ARKNIGHTS\"");
@@ -231,17 +237,29 @@ bool process() {
 			fs::rename("output.flac", g_outputpath / (i.first + ".flac"));
 		}
 		else {
-			tmpcmd.append(" -c:a libvorbis output.ogg");
+			tmpcmd.append(" -c:a libvorbis -aq 8 output.ogg");
 			system(tmpcmd.c_str());
 			fs::rename("output.ogg", g_outputpath / (i.first + ".ogg"));
 		}
 
+		try {
+			fs::remove(i.first + "_intro.ogg");
+			fs::remove(i.first + "_loop.ogg");
+		}
+		catch (...) {
+			;
+		}
 
 		mylist.close();
 	}
 
-	fs::remove("mylist.txt");
-	fs::remove("fadeout.wav");
+	try {
+		fs::remove("mylist.txt");
+		//fs::remove("fadeout.wav");
+	}
+	catch (...) {
+		;
+	}
 
 	return true;
 }

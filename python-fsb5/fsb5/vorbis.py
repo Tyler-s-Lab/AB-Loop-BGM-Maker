@@ -1,4 +1,4 @@
-import ctypes
+﻿import ctypes
 import ctypes.util
 import os
 from enum import IntEnum
@@ -38,7 +38,7 @@ class VorbisInfo(ctypes.Structure):
 
 class VorbisComment(ctypes.Structure):
 	"""
-	https://xiph.org/vorbis/doc/libvorbis/vorbis_info.html
+	https://xiph.org/vorbis/doc/libvorbis/vorbis_comment.html
 	"""
 	_fields_ = [
 		('user_comments', ctypes.POINTER(ctypes.c_char_p)),
@@ -150,7 +150,7 @@ class OggpackBuffer(ctypes.Structure):
 
 class OggPage(ctypes.Structure):
 	"""
-	https://xiph.org/ogg/doc/libogg/oggpack_buffer.html
+	https://xiph.org/ogg/doc/libogg/ogg_page.html
 	"""
 	_fields_ = [
 		('header', ctypes.POINTER(ctypes.c_char)),
