@@ -43,7 +43,7 @@ struct PAIRDATA {
 	PAIRDATA() :
 		hasIntro(false),
 		hasLoop(false),
-		offset(200000),
+		offset(0),
 		length(0) {}
 };
 
@@ -180,6 +180,13 @@ bool process() {
 
 	fs::create_directory(g_outputpath);
 
+	uint64_t empty_offset = 0;
+	if (!sffile.openFromFile("empty.wav")) {
+		cout << "Failed to read size of empty.wav!" << endl;
+		return false;
+	}
+	empty_offset = sffile.getSampleCount() - sffile.getSampleCount() % sffile.getChannelCount();
+
 	ofstream mylist;
 
 	for (const pair<string, PAIRDATA>& i : g_pairs) {
@@ -196,11 +203,14 @@ bool process() {
 			continue;
 		}
 
+		uint64_t offset = 0;
 		if (i.second.hasIntro) {
 			mylist << "file .\\\\InputGameFiles\\\\" << i.first << "_intro.wav" << endl;
+			offset = i.second.offset;
 		}
 		else {
-			mylist << "file .\\\\stempty.wav" << endl;
+			mylist << "file .\\\\empty.wav" << endl;
+			offset = empty_offset;
 		}
 		mylist << "file .\\\\InputGameFiles\\\\" << i.first << "_loop.wav" << endl;
 		mylist << "file .\\\\fadeout.wav" << endl;
@@ -215,7 +225,7 @@ bool process() {
 		string tmpcmd(FFMPEG_PATH);
 		tmpcmd.append(" -loglevel warning -y -f concat -safe 0 -i mylist.txt -af \"afade=t=in:st=0:d=0.001\"");
 		tmpcmd.append(" -metadata OHMSSPD=\"<");
-		tmpcmd.append(to_string(i.second.offset));
+		tmpcmd.append(to_string(offset));
 		tmpcmd.append("|");
 		tmpcmd.append(to_string(i.second.length));
 		tmpcmd.append(">\" -metadata TITLE=\"");
@@ -231,7 +241,7 @@ bool process() {
 			fs::rename("output.flac", g_outputpath / (i.first + ".flac"));
 		}
 		else {
-			tmpcmd.append(" -c:a libvorbis output.ogg");
+			tmpcmd.append(" -c:a libvorbis -aq 8 output.ogg");
 			system(tmpcmd.c_str());
 			fs::rename("output.ogg", g_outputpath / (i.first + ".ogg"));
 		}
