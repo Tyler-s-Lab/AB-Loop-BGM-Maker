@@ -219,7 +219,7 @@ bool process() {
 		// example
 		//ffmpeg -i test.ogg -map 0 -y -codec copy -metadata "DESCRIPTION=xxxx" -metadata "TITLE=xxxname" -metadata "COPYRIGHT=HYPERGRYPH" -metadata "ORGANIZATION=ARKNIGHTS" testoutput.ogg 
 		string tmpcmd(FFMPEG_PATH);
-		tmpcmd.append(" -loglevel warning -y -f concat -safe 0 -i mylist.txt ");
+		tmpcmd.append(" -loglevel error -y -f concat -safe 0 -i mylist.txt ");
 		tmpcmd.append(" -metadata OHMSSPD=\"<");
 		tmpcmd.append(to_string(offset));
 		tmpcmd.append("|");
