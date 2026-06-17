@@ -26,9 +26,20 @@
 namespace fs = std::filesystem;
 using namespace std;
 
-
-int main() {
+int wmain(int argc, wchar_t* argv[]) {
 	try {
+
+		// Get file path from command line arguments
+#ifdef _DEBUG
+		fs::path file_path{ "..\\x64\\test" };
+#else
+		if (argc < 2) {
+			return 0;
+		}
+		fs::path file_path{ argv[1] };
+#endif // _DEBUG
+		g_inputpath = file_path;
+
 		// 生成 带当前时间的 输出目录
 		struct tm t = { 0 };
 		time_t ts = time(0);

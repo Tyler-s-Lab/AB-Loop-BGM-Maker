@@ -22,6 +22,7 @@
 *  Tyler Parret Zhu (OwlHowlinMornSky) <mysteryworldgod@outlook.com>
 */
 #include "process.h"
+#include "parse_ini.h"
 
 #include <SFML/Audio/InputSoundFile.hpp>
 
@@ -40,11 +41,15 @@ struct PAIRDATA {
 	std::uint64_t offset;
 	std::uint64_t length;
 
+	string introName;
+	string loopName;
+
 	PAIRDATA() :
 		hasIntro(false),
 		hasLoop(false),
 		offset(0),
-		length(0) {}
+		length(0) {
+	}
 };
 
 /**
@@ -58,47 +63,44 @@ sf::InputSoundFile sffile;
  * @param i 文件名
 */
 void handleOneFile(const string& i) {
-	size_t pos; // 承接string::find的返回值
 	string name; // 去除附加内容的纯粹的音乐名（m_sys_xxx_intro.wav -> m_sys_xxx）
 	PAIRDATA tmpdata; // 临时音乐对数据
 
-	if ((pos = i.find("_intro.wav")) != string::npos) { // 匹配intro
-		// intro和loop都匹配，无法处理
-		if (i.find("_loop.wav") != string::npos) {
-			cout << "Warning: File \'" << i << "\' is too complex." << endl;
-			return;
-		}
-		// 取音乐名
-		name = i.substr(0, pos);
-		tmpdata.hasIntro = true;
-
-		cout << "Find: File \'" << i << "\' as Intro \'" << name << "\'." << endl;
-
-		// intro长度即offset
-		if (sffile.openFromFile(g_inputpath / i))
-			tmpdata.offset = sffile.getSampleCount() - sffile.getSampleCount() % sffile.getChannelCount();
-	}
-	else if ((pos = i.find("_loop.wav")) != string::npos) { // 匹配loop
-		name = i.substr(0, pos);
-		tmpdata.hasLoop = true;
-
-		cout << "Find: File \'" << i << "\' as Loop \'" << name << "\'." << endl;
-
-		if (sffile.openFromFile(g_inputpath / i))
-			tmpdata.length = sffile.getSampleCount() - sffile.getSampleCount() % sffile.getChannelCount();
-	}
-	else { // intro和loop都无法匹配，无法处理
-		cout << "Warning: File \'" << i << "\' cannot be handled." << endl;
+	if (auto res = base::filename2keyword(i); !res) {
+		cerr << "Warning: File \'" << i << "\' cannot be handled." << endl;
 		return;
+	}
+	else {
+		name = res.value().first;
+		if (res.value().second) { // 匹配intro
+			tmpdata.hasIntro = true;
+
+			cout << "Find: File \'" << i << "\' as Intro of \'" << name << "\'." << endl;
+
+			// intro长度即offset
+			if (sffile.openFromFile(g_inputpath / i))
+				tmpdata.offset = sffile.getSampleCount() - sffile.getSampleCount() % sffile.getChannelCount();
+
+			tmpdata.introName = i;
+		}
+		else { // 匹配loop
+			tmpdata.hasLoop = true;
+
+			cout << "Find: File \'" << i << "\' as Loop of \'" << name << "\'." << endl;
+
+			if (sffile.openFromFile(g_inputpath / i))
+				tmpdata.length = sffile.getSampleCount() - sffile.getSampleCount() % sffile.getChannelCount();
+
+			tmpdata.loopName = i;
+		}
 	}
 
 	map<string, PAIRDATA>::iterator p = g_pairs.find(name);
 
-
-	if (p == g_pairs.end()) { // 已经有对应文件名的数据对
+	if (p == g_pairs.end()) {
 		g_pairs.emplace(name, tmpdata);
 	}
-	else {
+	else { // 已经有对应文件名的数据对
 		if (tmpdata.hasLoop) {
 			if (p->second.hasLoop) {
 				cout << "Warning: Repeated Loop: \'" << i << "\' as \'" << name << "\'." << endl;
@@ -106,6 +108,7 @@ void handleOneFile(const string& i) {
 			}
 			p->second.hasLoop = true;
 			p->second.length = tmpdata.length;
+			p->second.loopName = i;
 		}
 		else {
 			if (p->second.hasIntro) {
@@ -114,6 +117,7 @@ void handleOneFile(const string& i) {
 			}
 			p->second.hasIntro = true;
 			p->second.offset = tmpdata.offset;
+			p->second.introName = i;
 		}
 	}
 	return;
@@ -149,26 +153,102 @@ bool getFiles() {
 	return true;
 }
 
+std::string doubleSlashes(const std::string& input) {
+	std::string result;
+	result.reserve(input.size() * 2); // 预分配空间，避免多次重分配
+	for (char ch : input) {
+		if (ch == '\\' || ch == '/') {
+			result.push_back(ch);
+			result.push_back(ch); // 重复两次
+		}
+		else {
+			result.push_back(ch);
+		}
+	}
+	return result;
+}
+
+std::shared_ptr<ini::IniConfig> g_iniConfig;
+void read_ini() {
+	fs::path ini_path = ".";
+	ini_path /= name_of_this_app + ".ini";
+
+	if (!fs::exists(".\\")) {
+		cerr << "Warning: Ini file missing." << endl;
+		return;
+	}
+
+	if (auto res = ini::read_ini_file(ini_path.string()); !res) {
+		cerr << "Warning: Ini file corrupted." << endl;
+		return;
+	}
+	else {
+		g_iniConfig = res.value();
+	}
+}
 
 } // namespace
 
 
 fs::path g_outputpath;
-const fs::path g_inputpath = "InputGameFiles";
+fs::path g_inputpath;
 
 
 bool process() {
-	bool flac = fs::exists("flac");
+	///////////////////////////////////////////////////////
+	read_ini();
+
+	bool set_title = false;
+	bool set_copyright = false;
+	bool set_organization = false;
+	bool flac = false;
 	int flacVal = -1;
-	if (flac) {
-		ifstream flacValFile;
-		flacValFile.open("flac");
-		if (flacValFile.is_open()) {
-			flacValFile >> flacVal;
+	int oggAq = -99;
+	if (g_iniConfig) {
+		ini::IniConfig& config = *g_iniConfig;
+
+		if (auto p = std::get_if<int64_t>(&config["set_title"]); p) {
+			set_title = (*p != 0);
 		}
-		flacValFile.close();
+		if (auto p = std::get_if<int64_t>(&config["set_copyright"]); p) {
+			set_copyright = (*p != 0);
+		}
+		if (auto p = std::get_if<int64_t>(&config["set_organization"]); p) {
+			set_organization = (*p != 0);
+		}
+
+		if (auto p = std::get_if<string>(&config["format"]); p) {
+			if (*p == "flac") {
+				flac = true;
+
+				if (auto pp = std::get_if<int64_t>(&config["flac_compression_level"]); pp) {
+					if (*pp < 0 || *pp > 8) {
+						cerr << "Warning: Invalid flac_compression_level in ini file, ignored." << endl;
+					}
+					else {
+						flacVal = static_cast<int>(*pp);
+					}
+				}
+			}
+			else if (*p == "ogg") {
+				flac = false;
+
+				if (auto pp = std::get_if<int64_t>(&config["ogg_quality"]); pp) {
+					if (*pp < 0 || *pp > 10) {
+						cerr << "Warning: Invalid ogg_quality in ini file, ignored." << endl;
+					}
+					else {
+						oggAq = static_cast<int>(*pp);
+					}
+				}
+			}
+			else {
+				cerr << "Warning: Invalid format in ini file, defaulting to ogg." << endl;
+			}
+		}
 	}
 
+	///////////////////////////////////////////////////////
 	if (!getFiles()) {
 		cout << "Failed to getFiles()!" << endl;
 		return false;
@@ -177,7 +257,6 @@ bool process() {
 		cout << "No file is found" << endl;
 		return true;
 	}
-
 	fs::create_directory(g_outputpath);
 
 	uint64_t empty_offset = 0;
@@ -192,60 +271,79 @@ bool process() {
 	for (const pair<string, PAIRDATA>& i : g_pairs) {
 		cout << "Process: \'" << i.first << "\'" << endl;
 
-		if (!i.second.hasLoop) {
-			cout << "!!!! Warning: \'" << i.first << "\' pair has no loop and will be discarded." << endl;
+		const string& key = i.first;
+		const PAIRDATA& data = i.second;
+
+		if (!data.hasLoop) {
+			cout << "!!!! Warning: \'" << key << "\' pair has no loop, skipping." << endl;
 			continue;
 		}
 
 		mylist.open("mylist.txt");
 		if (!mylist.is_open()) {
-			cout << "!!!! Error: Failed to open mylist.txt when handling \'" << i.first << "\'." << endl;
+			cout << "!!!! Error: Failed to open mylist.txt when handling \'" << key << "\'." << endl;
 			continue;
 		}
 
 		uint64_t offset = 0;
-		if (i.second.hasIntro) {
-			mylist << "file .\\\\InputGameFiles\\\\" << i.first << "_intro.wav" << endl;
-			offset = i.second.offset;
+		if (data.hasIntro) {
+			mylist << "file " << doubleSlashes((g_inputpath / data.introName).string()) << endl;
+			offset = data.offset;
 		}
 		else {
 			mylist << "file .\\\\empty.wav" << endl;
 			offset = empty_offset;
 		}
-		mylist << "file .\\\\InputGameFiles\\\\" << i.first << "_loop.wav" << endl;
+		mylist << "file " << doubleSlashes((g_inputpath / data.loopName).string()) << endl;
 		mylist << "file .\\\\fadeout.wav" << endl;
 
 		//ffmpeg -i i2.wav -to 2.0 -af "afade=t=out:st=0.8:d=1" output.wav
-		system((FFMPEG_PATH + " -loglevel warning -y -i \".\\InputGameFiles\\" +
-			i.first +
-			"_loop.wav\" -to 2.0 -af \"afade=t=out:st=0.8:d=1\" fadeout.wav").c_str());
+		system(
+			(FFMPEG_PATH + " -loglevel warning -y -i \"" +
+				(g_inputpath / data.loopName).string() +
+				"\" -to 2.0 -af \"afade=t=out:st=0.8:d=1\" fadeout.wav").c_str()
+		);
 
 		// example
 		//ffmpeg -i test.ogg -map 0 -y -codec copy -metadata "DESCRIPTION=xxxx" -metadata "TITLE=xxxname" -metadata "COPYRIGHT=HYPERGRYPH" -metadata "ORGANIZATION=ARKNIGHTS" testoutput.ogg 
 		string tmpcmd(FFMPEG_PATH);
 		tmpcmd.append(" -loglevel warning -y -f concat -safe 0 -i mylist.txt -af \"afade=t=in:st=0:d=0.001\"");
 		tmpcmd.append(" -metadata OHMSSPD=\"<");
-		tmpcmd.append(to_string(offset));
-		tmpcmd.append("|");
-		tmpcmd.append(to_string(i.second.length));
-		tmpcmd.append(">\" -metadata TITLE=\"");
-		tmpcmd.append(i.first);
-		tmpcmd.append("\" -metadata COPYRIGHT=\"HYPERGRYPH\" -metadata ORGANIZATION=\"ARKNIGHTS\"");
+		tmpcmd.append(to_string(offset) + "|");
+		tmpcmd.append(to_string(data.length) + ">\"");
+		if (set_title) {
+			tmpcmd.append(" -metadata TITLE=\"");
+			tmpcmd.append(key + "\"");
+		}
+		if (set_copyright) {
+			tmpcmd.append(" -metadata COPYRIGHT=\"");
+			tmpcmd.append(COPYRIGHT + "\"");
+		}
+		if (set_organization) {
+			tmpcmd.append(" -metadata ORGANIZATION=\"");
+			tmpcmd.append(ORGANIZATION + "\"");
+		}
+
 		if (flac) {
 			tmpcmd.append(" -c:a flac");
 			if (flacVal != -1) {
 				tmpcmd.append(" -compression_level " + to_string(flacVal));
 			}
 			tmpcmd.append(" output.flac");
+
 			system(tmpcmd.c_str());
-			fs::rename("output.flac", g_outputpath / (i.first + ".flac"));
+			fs::rename("output.flac", g_outputpath / (key + ".flac"));
 		}
 		else {
-			tmpcmd.append(" -c:a libvorbis -aq 8 output.ogg");
-			system(tmpcmd.c_str());
-			fs::rename("output.ogg", g_outputpath / (i.first + ".ogg"));
-		}
+			tmpcmd.append(" -c:a libvorbis");
+			if (oggAq != -99) {
+				tmpcmd.append(" -aq " + to_string(oggAq));
+			}
+			tmpcmd.append(" output.ogg");
 
+			system(tmpcmd.c_str());
+			fs::rename("output.ogg", g_outputpath / (key + ".ogg"));
+		}
 
 		mylist.close();
 	}
@@ -255,3 +353,4 @@ bool process() {
 
 	return true;
 }
+

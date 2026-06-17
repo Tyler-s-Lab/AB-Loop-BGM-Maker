@@ -30,7 +30,7 @@
  * @brief 输出目录
 */
 extern fs::path g_outputpath;
-extern const fs::path g_inputpath;
+extern fs::path g_inputpath;
 
 /**
  * @brief Process function
