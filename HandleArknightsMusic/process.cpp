@@ -287,14 +287,14 @@ bool process() {
 
 		uint64_t offset = 0;
 		if (data.hasIntro) {
-			mylist << "file " << doubleSlashes((g_inputpath / data.introName).string()) << endl;
+			mylist << "file \'" << doubleSlashes((g_inputpath / data.introName).string()) << '\'' << endl;
 			offset = data.offset;
 		}
 		else {
 			mylist << "file .\\\\empty.wav" << endl;
 			offset = empty_offset;
 		}
-		mylist << "file " << doubleSlashes((g_inputpath / data.loopName).string()) << endl;
+		mylist << "file \'" << doubleSlashes((g_inputpath / data.loopName).string()) << '\'' << endl;
 		mylist << "file .\\\\fadeout.wav" << endl;
 
 		//ffmpeg -i i2.wav -to 2.0 -af "afade=t=out:st=0.8:d=1" output.wav
