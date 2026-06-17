@@ -28,10 +28,15 @@
 #include <string>
 #include <map>
 #include <filesystem>
+#include <optional>
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
+namespace fs = std::filesystem;
+
+using FilenameRes = std::pair<std::string, bool>;
+
 inline std::string FFMPEG_PATH = "ffmpeg";
 
-namespace fs = std::filesystem;
+#include "FileNameProc_Arknights.h"
