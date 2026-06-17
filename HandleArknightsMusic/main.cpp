@@ -28,12 +28,20 @@ using namespace std;
 
 int wmain(int argc, wchar_t* argv[]) {
 	try {
+		cout << "Info: Cmd line:" << endl;
+		for (int i = 0; i < argc; ++i) {
+			wcout << "\t'" << argv[i] << "'" << endl;
+		}
+		cout << "End cmd line." << endl << endl;
 
 		// Get file path from command line arguments
 #ifdef _DEBUG
 		fs::path file_path{ "..\\x64\\test" };
 #else
 		if (argc < 2) {
+			cout << "Error: Unsupported Argument." << endl;
+			cout << "Just drag one single folder and drop on the icon of this app." << endl;
+			system("pause");
 			return 0;
 		}
 		fs::path file_path{ argv[1] };
