@@ -27,6 +27,8 @@ namespace fs = std::filesystem;
 using namespace std;
 
 int wmain(int argc, wchar_t* argv[]) {
+	SetConsoleOutputCP(CP_UTF8);
+	setlocale(LC_ALL, ".utf8");
 	try {
 		cout << "Info: Cmd line:" << endl;
 		for (int i = 0; i < argc; ++i) {
