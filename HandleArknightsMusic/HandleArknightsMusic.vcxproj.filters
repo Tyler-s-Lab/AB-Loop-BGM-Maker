@@ -14,28 +14,22 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="process.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="parse_ini.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
-    <ClCompile Include="FilenameProc_Arknights.cpp">
-      <Filter>Sources</Filter>
+    <ClCompile Include="WorkModule.ixx">
+      <Filter>Headers</Filter>
+    </ClCompile>
+    <ClCompile Include="ArknightsModule.ixx">
+      <Filter>Headers</Filter>
+    </ClCompile>
+    <ClCompile Include="PairDataModule.ixx">
+      <Filter>Headers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="process.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="framework.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
     <ClInclude Include="parse_ini.h">
-      <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="FilenameProc_Arknights.h">
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">

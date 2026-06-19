@@ -1,11 +1,10 @@
-﻿#include <iostream>
-#include <fstream>
-#include <string_view>
-#include <charconv>
-#include <algorithm>
+﻿#include "parse_ini.h"
 #include <cctype>
-#include <optional>
-#include "parse_ini.h"
+#include <fstream>
+#include <charconv>
+#include <iostream>
+#include <algorithm>
+#include <string_view>
 
 using namespace ini;
 
