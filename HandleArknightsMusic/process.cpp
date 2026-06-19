@@ -136,7 +136,7 @@ bool getFiles() {
 
 	// 检查输入目录
 	if (!fs::exists(input) || !fs::is_directory(input)) {
-		cout << "Cannot open directory \'InputGameFiles\'!" << endl;
+		cout << "Cannot open directory \"" << input << "\"!" << endl;
 		return false;
 	}
 
@@ -173,7 +173,7 @@ void read_ini() {
 	fs::path ini_path = ".";
 	ini_path /= name_of_this_app + ".ini";
 
-	if (!fs::exists(".\\")) {
+	if (!fs::exists(ini_path)) {
 		cerr << "Warning: Ini file missing." << endl;
 		return;
 	}
