@@ -14,10 +14,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="parse_ini.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
     <ClCompile Include="WorkModule.ixx">
       <Filter>Headers</Filter>
     </ClCompile>
@@ -27,14 +23,15 @@
     <ClCompile Include="PairDataModule.ixx">
       <Filter>Headers</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="parse_ini.h">
+    <ClCompile Include="IniParserModule.ixx">
       <Filter>Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h">
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="TempGuardModule.ixx">
       <Filter>Headers</Filter>
-    </ClInclude>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="maker.ico">
@@ -45,5 +42,15 @@
     <ResourceCompile Include="HandleArknightsMusic.rc">
       <Filter>Resources</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="config.ini">
+      <Filter>Resources</Filter>
+    </CopyFileToFolders>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h">
+      <Filter>Resources</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

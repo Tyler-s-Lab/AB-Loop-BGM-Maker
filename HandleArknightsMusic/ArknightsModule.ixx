@@ -4,15 +4,17 @@ import <string>;
 import <optional>;
 import <algorithm>;
 
-export const std::string name_of_this_app = "HandleArknightsMusic";
 export const std::string COPYRIGHT = "HYPERGRYPH";
 export const std::string ORGANIZATION = "ARKNIGHTS";
 
-export using FilenameRes = std::pair<std::string, bool>;
+export struct FilenameRes {
+	std::string key; // 去除附加内容的纯粹的音乐名（m_sys_xxx_intro.wav -> m_sys_xxx）
+	bool is_intro;
+};
 
 export std::optional<FilenameRes> filename2keyword(const std::string& filename) {
 	size_t pos; // 承接string::find的返回值
-	std::string res;
+	std::string key;
 	bool isIntro = false;
 
 	std::string i = filename;
@@ -24,15 +26,15 @@ export std::optional<FilenameRes> filename2keyword(const std::string& filename) 
 			return {};
 		}
 
-		res = filename.substr(0, pos);
+		key = filename.substr(0, pos);
 		isIntro = true;
 	}
 	else if (pos = i.find("_loop.wav"); pos != std::string::npos) { // 匹配loop
-		res = filename.substr(0, pos);
+		key = filename.substr(0, pos);
 		isIntro = false;
 	}
 	else { // intro和loop都无法匹配，无法处理
 		return {};
 	}
-	return std::make_pair(res, isIntro);
+	return { {key, isIntro} };
 }

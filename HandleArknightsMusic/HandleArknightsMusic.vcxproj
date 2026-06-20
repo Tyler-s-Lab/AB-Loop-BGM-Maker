@@ -92,13 +92,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ArknightsModule.ixx" />
+    <ClCompile Include="IniParserModule.ixx" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PairDataModule.ixx" />
-    <ClCompile Include="parse_ini.cpp" />
+    <ClCompile Include="TempGuardModule.ixx" />
     <ClCompile Include="WorkModule.ixx" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="parse_ini.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
@@ -106,6 +106,11 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="maker.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="config.ini">
+      <FileType>Document</FileType>
+    </CopyFileToFolders>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

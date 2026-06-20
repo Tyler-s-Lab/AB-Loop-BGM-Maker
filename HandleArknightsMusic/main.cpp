@@ -1,4 +1,5 @@
-﻿#include <iostream>
+﻿#include <memory>
+#include <iostream>
 #include <filesystem>
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -28,11 +29,11 @@ int wmain(int argc, wchar_t* argv[]) {
 #endif // !_DEBUG
 
 	try {
-		Work worker;
+		auto worker = std::make_unique<Work>();
 		if (argc > 1)
-			worker.run(argc - 1, argv + 1);
+			worker->run(argc - 1, argv + 1);
 		else
-			worker.run(0, nullptr);
+			worker->run(0, nullptr);
 	}
 	catch (std::exception& excp) {
 		std::cout << std::endl << std::endl << "Exception: " << excp.what() << std::endl << std::endl;
