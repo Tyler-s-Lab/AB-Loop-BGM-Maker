@@ -1,6 +1,8 @@
 ﻿export module WorkModule;
 
 import <map>;
+import <chrono>;
+import <format>;
 import <string>;
 import <fstream>;
 import <iostream>;
@@ -65,14 +67,10 @@ public:
 	~Work() = default;
 
 private:
+	// 生成 带当前时间的 输出目录
 	void generate_output_path() {
-		// 生成 带当前时间的 输出目录
-		struct tm t = { 0 };
-		time_t ts = time(0);
-		localtime_s(&t, &ts);
-		char buf[128];
-		strftime(buf, sizeof(buf), "%Y-%m-%d %H;%M;%S", &t);
-		output_dir_path = std::string("Output ") + buf;
+		std::chrono::sys_seconds time = std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::system_clock::now());
+		output_dir_path = std::format("Output {0:%Y-%m-%d %H;%M;%S}", time);
 		return;
 	}
 
