@@ -23,6 +23,9 @@
     <ClCompile Include="WorkModule.ixx">
       <Filter>Headers</Filter>
     </ClCompile>
+    <ClCompile Include="PairDataModule.ixx">
+      <Filter>Headers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Image Include="maker.ico">

@@ -15,7 +15,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(MSBuildThisFileDirectory)IniParserModule.ixx" />
-    <ClCompile Include="$(MSBuildThisFileDirectory)PairDataModule.ixx" />
     <ClCompile Include="$(MSBuildThisFileDirectory)TempGuardModule.ixx" />
   </ItemGroup>
 </Project>

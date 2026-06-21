@@ -96,6 +96,7 @@
   <ItemGroup>
     <ClCompile Include="ArknightsModule.ixx" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="PairDataModule.ixx" />
     <ClCompile Include="WorkModule.ixx" />
   </ItemGroup>
   <ItemGroup>
