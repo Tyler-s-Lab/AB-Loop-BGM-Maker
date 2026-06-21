@@ -10,7 +10,6 @@ namespace fs = std::filesystem;
 
 int wmain(int argc, wchar_t* argv[]) {
 	SetConsoleOutputCP(CP_UTF8);
-	setlocale(LC_ALL, ".utf8");
 
 	std::cout << "Info: Cmd line:" << std::endl;
 	for (int i = 0; i < argc; ++i) {
