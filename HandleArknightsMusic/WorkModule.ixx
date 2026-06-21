@@ -58,12 +58,15 @@ public:
 		}
 
 		if (g_pairs.empty()) {
-			throw std::exception("No file was found.");
+			Logger::success << "No file was found.";
+			return;
 		}
 
 		generate_output_path();
 
 		process_pairs();
+
+		Logger::success << "All operations are done.";
 		return;
 	}
 
