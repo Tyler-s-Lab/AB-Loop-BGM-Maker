@@ -262,53 +262,64 @@ private:
 
 		//ffmpeg -i i2.wav -to 2.0 -af "afade=t=out:st=0.8:d=1" output.wav
 		CmdArgBuilderW cab;
-		cab += L"-loglevel";
-		cab += L"warning";
-		cab += L"-y";
-		cab += L"-i";
-		cab += data.loop_filepath.wstring();
-		cab += L"-to";
-		cab += L"2.0";
-		cab += L"-af";
-		cab += L"afade=t=out:st=0.8:d=1";
-		cab += L"fadeout.wav";
+		cab << L"-loglevel" << L"warning";
+		cab << L"-y";
+		cab << L"-i" << data.loop_filepath;
+		cab << L"-to" << L"2.0";
+		cab << L"-af" << L"afade=t=out:st=0.8:d=1";
+		cab << L"fadeout.wav";
 
-		WinProcRunAndWait(FFMPEG_PATH, cab);
+		int ret_code = WinProcRunAndWait(FFMPEG_PATH, cab);
+		if (ret_code != 0) {
+			Logger::error << "FFmpeg does not exit normally. Code (1, " << ret_code << ").";
+			return;
+		}
 
 		// example
 		//ffmpeg -i test.ogg -map 0 -y -codec copy -metadata "DESCRIPTION=xxxx" -metadata "TITLE=xxxname" -metadata "COPYRIGHT=HYPERGRYPH" -metadata "ORGANIZATION=ARKNIGHTS" testoutput.ogg 
 		cab.clear();
-		cab = cab + L"-loglevel" + L"warning" + L"-y" + L"-f" + L"concat" + L"-safe" + L"0" + L"-i" + L"mylist.txt" + L"-af" + L"afade=t=in:st=0:d=0.001";
-		cab = cab + L"-metadata" + std::format(L"OHMSSPD=<{0}|{1}>", offset, data.length);
+		cab << L"-loglevel" << L"warning";
+		cab << L"-y";
+		cab << L"-f" << L"concat";
+		cab << L"-safe" << L"0";
+		cab << L"-i" << L"mylist.txt";
+		cab << L"-af" << L"afade=t=in:st=0:d=0.001";
+		cab << L"-metadata" << std::format(L"OHMSSPD=<{0}|{1}>", offset, data.length);
 		if (set_title) {
-			cab = cab + L"-metadata" + std::format(L"TITLE={0}", key);
+			cab << L"-metadata" << std::format(L"TITLE={0}", key);
 		}
 		if (set_copyright) {
-			cab = cab + L"-metadata" + std::format(L"COPYRIGHT={0}", COPYRIGHT);
+			cab << L"-metadata" << std::format(L"COPYRIGHT={0}", COPYRIGHT);
 		}
 		if (set_organization) {
-			cab = cab + L"-metadata" + std::format(L"ORGANIZATION={0}", ORGANIZATION);
+			cab << L"-metadata" << std::format(L"ORGANIZATION={0}", ORGANIZATION);
 		}
 
-		cab += L"-c:a";
 		if (output_flac_not_ogg) {
-			cab += L"flac";
+			cab << L"-c:a" << L"flac";
 			if (output_flac_compression_level != -1) {
-				cab = cab + L"-compression_level" + std::to_wstring(output_flac_compression_level);
+				cab << L"-compression_level" << output_flac_compression_level;
 			}
-			cab += L"output.flac";
+			cab << L"output.flac";
+		}
+		else {
+			cab << L"-c:a" << L"libvorbis";
+			if (output_ogg_audio_quality != -99) {
+				cab << L"-aq" << output_ogg_audio_quality;
+			}
+			cab << L"output.ogg";
+		}
 
-			WinProcRunAndWait(FFMPEG_PATH, cab);
+		ret_code = WinProcRunAndWait(FFMPEG_PATH, cab);
+		if (ret_code != 0) {
+			Logger::error << "FFmpeg does not exit normally. Code (2, " << ret_code << ").";
+			return;
+		}
+
+		if (output_flac_not_ogg) {
 			fs::rename(L"output.flac", output_dir_path / (key + L".flac"));
 		}
 		else {
-			cab += L"libvorbis";
-			if (output_ogg_audio_quality != -99) {
-				cab = cab + L"-aq" + std::to_wstring(output_ogg_audio_quality);
-			}
-			cab += L"output.ogg";
-
-			WinProcRunAndWait(FFMPEG_PATH, cab);
 			fs::rename(L"output.ogg", output_dir_path / (key + L".ogg"));
 		}
 	}

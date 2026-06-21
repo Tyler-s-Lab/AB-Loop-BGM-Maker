@@ -1,6 +1,7 @@
 ﻿export module CmdArgsHelperModule;
 
 import <string>;
+import <sstream>;
 import <filesystem>;
 
 export template <typename _Elem>
@@ -92,6 +93,30 @@ public:
 		this->_str.reserve(this->_str.size() + right._str.size() + 2);
 		this->_str.append(1, ' ');
 		this->_str.append(right._str);
+		return *this;
+	}
+
+	template<typename _Arg>
+	BasicCmdArgBuilder& operator << (_Arg next_arg) {
+		std::basic_ostringstream<_Elem> oss;
+		oss << next_arg;
+		*this += oss.view();
+		return *this;
+	}
+
+	template<>
+	BasicCmdArgBuilder& operator << <std::filesystem::path>(std::filesystem::path next_arg_path) {
+		*this += next_arg_path.string<_Elem>();
+		return *this;
+	}
+	template<>
+	BasicCmdArgBuilder& operator << <const std::filesystem::path&>(const std::filesystem::path& next_arg_path) {
+		*this += next_arg_path.string<_Elem>();
+		return *this;
+	}
+	template<>
+	BasicCmdArgBuilder& operator << <std::filesystem::path&&>(std::filesystem::path&& next_arg_path) {
+		*this += next_arg_path.string<_Elem>();
 		return *this;
 	}
 
