@@ -5,6 +5,7 @@ export import <format>;
 export import ConsoleModule;
 import <ostream>;
 import <sstream>;
+import <filesystem>;
 import StringWidthHelperModule;
 
 class LoggerStreamGetter {
@@ -33,9 +34,8 @@ public:
 	/// 显示消息并等待用户按任意键继续。
 	/// </summary>
 	static void Pause() {
-		Console::ResetEncoding();
-		system("pause");
-		Console::SetEncodingToUTF8();
+		Console::WriteLine("Press any key to continue . . .");
+		Console::ReadKey();
 	}
 
 	static inline LoggerStreamGetter info{ LoggerStreamGetter::Type::Info };
@@ -160,6 +160,22 @@ public:
 		requires(!strwidth::compatible_with_wchar_t<_Arg>)
 	LoggerWrapperStream& operator<<(_Arg p) {
 		m_stream << strwidth::utf8_try_to_wstring(p);
+		return *this;
+	}
+
+	template<>
+	LoggerWrapperStream& operator<< <std::filesystem::path>(std::filesystem::path p) {
+		m_stream << L'"' << p.wstring() << L'"';
+		return *this;
+	}
+	template<>
+	LoggerWrapperStream& operator<< <const std::filesystem::path&>(const std::filesystem::path& p) {
+		m_stream << L'"' << p.wstring() << L'"';
+		return *this;
+	}
+	template<>
+	LoggerWrapperStream& operator<< <std::filesystem::path&&>(std::filesystem::path&& p) {
+		m_stream << L'"' << p.wstring() << L'"';
 		return *this;
 	}
 };

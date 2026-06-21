@@ -1,10 +1,18 @@
 ﻿
 import <memory>;
+import <filesystem>;
 import LoggerModule;
 import WorkModule;
+import WinHelperModule;
 
 int wmain(int argc, wchar_t* argv[]) {
 	Logger::Init();
+
+	if (!SetCurrentDirectoryToExe()) {
+		Logger::error << "Failed to initialize: " << std::filesystem::current_path();
+		return -1;
+	}
+	Logger::info << "Current: " << std::filesystem::current_path();
 
 	Logger::Info("Cmd line:");
 	for (int i = 0; i < argc; ++i) {

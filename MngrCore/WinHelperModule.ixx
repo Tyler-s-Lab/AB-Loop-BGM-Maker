@@ -7,6 +7,38 @@ import <vector>;
 import <cstdio>;
 import <filesystem>;
 import <Windows.h>;
+import <iostream>;
+
+export bool SetCurrentDirectoryToExe() {
+	/*std::wstring buf(MAX_PATH, L'\0');
+	DWORD code = 0;
+
+ReTryGet:
+	SetLastError(0);
+	code = GetModuleFileNameW(NULL, buf.data(), (DWORD)buf.size());
+	if (0 == code) {
+		return false;
+	}
+	if (code >= buf.size() && ERROR_INSUFFICIENT_BUFFER == GetLastError()) {
+		if (buf.size() >= 0x7FFFFFFF / 4) {
+			return false;
+		}
+		buf.resize(buf.size() * 2);
+		goto ReTryGet;
+	}*/
+
+	wchar_t* p = nullptr;
+	if (0 != _get_wpgmptr(&p)) {
+		return false;
+	}
+	std::filesystem::path exePath = std::filesystem::absolute(p);
+
+	std::filesystem::path exeDir = exePath.parent_path();
+	if (0 == SetCurrentDirectoryW((LR"(\\?\)" + exeDir.wstring()).c_str())) {
+		return false;
+	}
+	return true;
+}
 
 // 进程运行器类：启动子进程、等待结束、获取退出码
 export int WinProcRunAndWait(const std::filesystem::path& exe_path, const CmdArgBuilderW& arguments) {
