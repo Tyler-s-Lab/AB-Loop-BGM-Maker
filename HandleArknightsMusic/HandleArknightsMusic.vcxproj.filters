@@ -14,22 +14,13 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="WorkModule.ixx">
-      <Filter>Headers</Filter>
+    <ClCompile Include="main.cpp">
+      <Filter>Sources</Filter>
     </ClCompile>
     <ClCompile Include="ArknightsModule.ixx">
       <Filter>Headers</Filter>
     </ClCompile>
-    <ClCompile Include="PairDataModule.ixx">
-      <Filter>Headers</Filter>
-    </ClCompile>
-    <ClCompile Include="IniParserModule.ixx">
-      <Filter>Headers</Filter>
-    </ClCompile>
-    <ClCompile Include="main.cpp">
-      <Filter>Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="TempGuardModule.ixx">
+    <ClCompile Include="WorkModule.ixx">
       <Filter>Headers</Filter>
     </ClCompile>
   </ItemGroup>

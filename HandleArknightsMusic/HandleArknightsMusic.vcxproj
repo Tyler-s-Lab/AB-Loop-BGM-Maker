@@ -35,6 +35,7 @@
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="Shared">
+    <Import Project="..\MngrCore\MngrCore.vcxitems" Label="Shared" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -92,10 +93,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ArknightsModule.ixx" />
-    <ClCompile Include="IniParserModule.ixx" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="PairDataModule.ixx" />
-    <ClCompile Include="TempGuardModule.ixx" />
     <ClCompile Include="WorkModule.ixx" />
   </ItemGroup>
   <ItemGroup>
