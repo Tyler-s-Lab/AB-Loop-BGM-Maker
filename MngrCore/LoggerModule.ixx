@@ -10,6 +10,7 @@ public:
 	/// 初始化。
 	/// </summary>
 	static void Init() {
+		std::setlocale(LC_ALL, ".UTF-8");
 		Console::SetEncodingToUTF8();
 	}
 
@@ -77,7 +78,7 @@ public:
 
 		if (inner)
 			return Exception(std::format("'{}' occurs because \"{}\" then ", typeid(e).name(), e.what()));
-		return Exception(std::format("'{}' occurs because \"{}\".\n", typeid(e).name(), e.what()));
+		return Exception(std::format("'{}' occurs because \"{}\".", typeid(e).name(), e.what()));
 	}
 
 	/**
