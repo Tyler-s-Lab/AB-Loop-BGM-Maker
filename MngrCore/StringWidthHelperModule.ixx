@@ -3,6 +3,7 @@
 import <string>;
 import <utility>;
 import <type_traits>;
+import <Windows.h>;
 
 export namespace strwidth {
 
@@ -80,5 +81,29 @@ concept char_compatible_between =
 (std::is_same_v<std::decay_t<CharT>, char> && compatible_with_char<Args...>) ||
 (std::is_same_v<std::decay_t<CharT>, wchar_t> && compatible_with_wchar_t<Args...>)
 ;
+
+std::wstring utf8_try_to_wstring(std::string_view utf8_str) {
+	if (utf8_str.empty() || utf8_str.size() > (0x7FFFFFFF - 50)) return L"";
+
+	int len = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8_str.data(), (int)utf8_str.size(), nullptr, 0);
+	if (len == 0) return L"";
+
+	std::wstring result(len, L'\0');
+	if (MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8_str.data(), (int)utf8_str.size(), result.data(), len) != len)
+		return L"";
+	return result;
+}
+
+std::string wstring_try_to_utf8(std::wstring_view wstr) {
+	if (wstr.empty() || wstr.size() > (0x7FFFFFFF - 50)) return "";
+
+	int len = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, wstr.data(), (int)wstr.size(), nullptr, 0, nullptr, nullptr);
+	if (len == 0) return "";
+
+	std::string result(len, '\0');
+	if (WideCharToMultiByte(CP_UTF8, 0, wstr.data(), -1, &result[0], len, nullptr, nullptr) != len)
+		return "";
+	return result;
+}
 
 }

@@ -8,7 +8,7 @@ int wmain(int argc, wchar_t* argv[]) {
 
 	Logger::Info("Cmd line:");
 	for (int i = 0; i < argc; ++i) {
-		Logger::Info(std::format(L"\t{0}", argv[i]));
+		Logger::info << L"    " << argv[i];
 	}
 	Logger::Info("Cmd end.");
 	Console::WriteLine();
@@ -19,8 +19,8 @@ int wmain(int argc, wchar_t* argv[]) {
 #ifndef _DEBUG
 		if (argc < 2) {
 			Logger::Error("No argument provided.");
-			Logger::Info("Just drag files/folders onto the icon of this app");
-			Logger::Info("or list paths after app name.");
+			Logger::Info("     Just drag files/folders onto the icon of this app");
+			Logger::Info("     or list paths after app name.");
 			code = 1;
 			break;
 		}

@@ -82,13 +82,13 @@ private:
 		ini_path /= "config.ini";
 
 		if (!fs::exists(ini_path)) {
-			Logger::Warning(std::format(L"Config file missing: '{0}'.", ini_path.wstring()));
+			Logger::warning << "Config file missing: " << ini_path << ".";
 			return;
 		}
 
 		std::shared_ptr<ini::IniConfig> g_iniConfig;
 		if (auto res = ini::read_ini_file(ini_path.string()); !res) {
-			Logger::Warning(std::format(L"Config file corrupted: '{0}'.", ini_path.wstring()));
+			Logger::warning << "Config file corrupted: " << ini_path << ".";
 			return;
 		}
 		else {
@@ -112,7 +112,7 @@ private:
 
 					if (auto pp = std::get_if<int64_t>(&config["flac_compression_level"]); pp) {
 						if (*pp < 0 || *pp > 8) {
-							Logger::Warning(std::format(L"Invalid flac_compression_level (0 - 8) in ini file, ignored: '{0}'.", *pp));
+							Logger::warning << "Invalid flac_compression_level (0 - 8) in ini file, ignored: '" << *pp << "'.";
 						}
 						else {
 							output_flac_compression_level = static_cast<int>(*pp);
@@ -124,7 +124,7 @@ private:
 
 					if (auto pp = std::get_if<int64_t>(&config["ogg_quality"]); pp) {
 						if (*pp < 0 || *pp > 10) {
-							Logger::Warning(std::format(L"Invalid ogg_quality (0 - 10) in ini file, ignored: '{0}'.", *pp));
+							Logger::warning << "Invalid ogg_quality (0 - 10) in ini file, ignored: '" << *pp << "'.";
 						}
 						else {
 							output_ogg_audio_quality = static_cast<int>(*pp);
@@ -132,7 +132,7 @@ private:
 					}
 				}
 				else {
-					Logger::Warning(std::format("Invalid format in ini file, defaulting to ogg: '{0}'.", *p));
+					Logger::warning << "Invalid format in ini file, defaulting to ogg: '" << *p << "'.";
 				}
 			}
 		}
@@ -141,7 +141,7 @@ private:
 	void enum_one_item(fs::path input) {
 		static size_t depth = 0;
 		if (depth >= Max_Recurse_Depth) {
-			Logger::Warning(std::format(L"Reached Max_Recurse_Depth ({0}), skipping: '{1}'.", Max_Recurse_Depth, input.wstring()));
+			Logger::warning << "Reached Max_Recurse_Depth (" << Max_Recurse_Depth << "), skipping: " << input << ".";
 			return;
 		}
 		TempGuard tg{ depth };
@@ -156,7 +156,7 @@ private:
 			enum_one_file(input);
 		}
 		else {
-			Logger::Warning(std::format(L"Unknown item, skipping: '{0}'.", input.wstring()));
+			Logger::warning << "Unknown item, skipping: " << input << ".";
 		}
 
 		depth--;
@@ -165,14 +165,14 @@ private:
 
 	void enum_one_file(fs::path filepath) {
 		if (!_sffile.openFromFile(filepath)) {
-			Logger::Warning(std::format(L"Failed to read length, skipping: '{0}'.", filepath.wstring()));
+			Logger::error << "Failed to read length, skipping: " << filepath << ".";
 			return;
 		}
 		uint64_t sample_cnt = _sffile.getSampleCount() - _sffile.getSampleCount() % _sffile.getChannelCount();
 
 		FilenameRes file_type;
 		if (auto res = filename2keyword(filepath.filename().wstring()); !res) {
-			Logger::Warning(std::format(L"Failed to handle on file: '{0}'.", filepath.wstring()));
+			Logger::error << "Failed to handle on file: " << filepath << ".";
 			return;
 		}
 		else {
@@ -181,9 +181,9 @@ private:
 
 		PAIRDATA& data = g_pairs[file_type.key];
 		if (file_type.is_intro) {
-			Logger::Info(std::format(L"Consider '{0}' as the 'intro' part of '{1}'.", filepath.wstring(), file_type.key));
+			Logger::info << "Consider " << filepath << " as the 'intro' part of '" << file_type.key << "'.";
 			if (data.has_intro) {
-				Logger::Warning(std::format(L"Repeated 'intro' part of '{0}'.", file_type.key));
+				Logger::warning << "Repeated 'intro' part of '" << file_type.key << "', ignoring.";
 				return;
 			}
 			data.has_intro = true;
@@ -191,9 +191,9 @@ private:
 			data.intro_filepath = filepath;
 		}
 		else {
-			Logger::Info(std::format(L"Consider '{0}' as the 'loop' part of '{1}'.", filepath.wstring(), file_type.key));
+			Logger::info << "Consider " << filepath << " as the 'loop' part of '" << file_type.key << "'.";
 			if (data.has_loop) {
-				Logger::Warning(std::format(L"Repeated 'loop' part of '{0}'.", file_type.key));
+				Logger::warning << "Repeated 'loop' part of '" << file_type.key << "', ignoring.";
 				return;
 			}
 			data.has_loop = true;
@@ -215,15 +215,15 @@ private:
 			catch (const internal_exception& e) {
 				Logger::Exception(e);
 				Logger::Exception(e.description());
-				Logger::Error(std::format(L"Failed to process '{0}', skipping.", key));
+				Logger::error << "Failed to process '" << key << "', skipping.";
 			}
 			catch (const std::exception& e) {
 				Logger::Exception(e);
-				Logger::Error(std::format(L"Failed to process '{0}', skipping.", key));
+				Logger::error << "Failed to process '" << key << "', skipping.";
 			}
 			catch (...) {
 				Logger::Exception("Unknown exception.");
-				Logger::Error(std::format(L"Failed to process '{0}', skipping.", key));
+				Logger::error << "Failed to process '" << key << "', skipping.";
 			}
 		}
 
@@ -232,17 +232,17 @@ private:
 	}
 
 	void process_item(const std::wstring& key, const PAIRDATA& data) {
-		Logger::Info(std::format(L"Processing '{0}'.", key));
+		Logger::info << "Processing '" << key << "'.";
 
 		if (!data.has_loop) {
-			Logger::Warning(std::format(L"No 'loop' part found of '{0}', skipping.", key));
+			Logger::error << "No 'loop' part found of '" << key << "' skipping.";
 			return;
 		}
 
 		std::ofstream mylist;
 		mylist.open("mylist.txt");
 		if (!mylist.is_open()) {
-			Logger::Error(std::format(L"Failed to open 'mylist.txt' when handling '{0}', skipping.", key));
+			Logger::error << "Failed to open 'mylist.txt' when handling '" << key << "' skipping.";
 			return;
 		}
 
