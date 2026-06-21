@@ -41,6 +41,9 @@
     <CopyFileToFolders Include="config.ini">
       <Filter>Resources</Filter>
     </CopyFileToFolders>
+    <CopyFileToFolders Include="empty.wav">
+      <Filter>Resources</Filter>
+    </CopyFileToFolders>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
