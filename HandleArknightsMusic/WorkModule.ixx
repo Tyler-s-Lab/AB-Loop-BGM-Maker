@@ -63,6 +63,7 @@ public:
 		}
 
 		generate_output_path();
+		Logger::info << "Outputs will be in '" << output_dir_path << "'.";
 
 		process_pairs();
 
@@ -76,7 +77,7 @@ private:
 	// 生成 带当前时间的 输出目录
 	void generate_output_path() {
 		std::chrono::sys_seconds time = std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::system_clock::now());
-		output_dir_path = std::format("Output {0:%Y-%m-%d %H;%M;%S}", time);
+		output_dir_path = fs::current_path() / std::format(L"Output {0:%Y-%m-%d %H;%M;%S}", time);
 		return;
 	}
 
