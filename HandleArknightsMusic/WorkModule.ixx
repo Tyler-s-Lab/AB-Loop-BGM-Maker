@@ -47,7 +47,7 @@ public:
 
 #ifdef _DEBUG
 		if (argc < 1) {
-			enum_one_item(fs::path{ LR"(C:\Users\Myste\protable_apps\.Extractor\BGM-Maker Release\test)" });
+			enum_one_item(fs::path{ LR"(C:\Users\Myste\protable_apps\.OHMS\BGM-Maker Release\test)" });
 		}
 #endif // _DEBUG
 		for (int i = 0; i < argc; ++i) {
@@ -222,15 +222,15 @@ private:
 
 			uint64_t offset = 0;
 			if (data.has_intro) {
-				mylist << "file \'" << doubleSlashes(data.intro_filepath.string()) << '\'' << std::endl;
+				mylist << "file \'" << data.intro_filepath.string() << '\'' << std::endl;
 				offset = data.offset;
 			}
 			else {
 				mylist << "file .\\\\empty.wav" << std::endl;
 				offset = offset_of_empty_intro;
 			}
-			mylist << "file \'" << doubleSlashes(data.loop_filepath.string()) << '\'' << std::endl;
-			mylist << "file .\\\\fadeout.wav" << std::endl;
+			mylist << "file \'" << data.loop_filepath.string() << '\'' << std::endl;
+			mylist << "file \'.\\fadeout.wav\'" << std::endl;
 
 			//ffmpeg -i i2.wav -to 2.0 -af "afade=t=out:st=0.8:d=1" output.wav
 			system(
@@ -285,21 +285,6 @@ private:
 
 		fs::remove("mylist.txt");
 		fs::remove("fadeout.wav");
-	}
-
-	std::string doubleSlashes(const std::string& input) {
-		std::string result;
-		result.reserve(input.size() * 2); // 预分配空间，避免多次重分配
-		for (char ch : input) {
-			if (ch == '\\' || ch == '/') {
-				result.push_back(ch);
-				result.push_back(ch); // 重复两次
-			}
-			else {
-				result.push_back(ch);
-			}
-		}
-		return result;
 	}
 
 };
