@@ -5,12 +5,13 @@ import <chrono>;
 import <format>;
 import <string>;
 import <fstream>;
-import <iostream>;
 import <filesystem>;
 import <SFML/Audio/InputSoundFile.hpp>;
 
 import TempGuardModule;
 import IniParserModule;
+import LoggerModule;
+
 import PairDataModule;
 import ArknightsModule;
 
@@ -79,13 +80,13 @@ private:
 		ini_path /= "config.ini";
 
 		if (!fs::exists(ini_path)) {
-			std::cerr << "Warning: Ini file missing." << std::endl;
+			Logger::Warning(std::format(L"Config file missing: '{0}'.", ini_path.wstring()));
 			return;
 		}
 
 		std::shared_ptr<ini::IniConfig> g_iniConfig;
 		if (auto res = ini::read_ini_file(ini_path.string()); !res) {
-			std::cerr << "Warning: Ini file corrupted." << std::endl;
+			Logger::Warning(std::format(L"Config file corrupted: '{0}'.", ini_path.wstring()));
 			return;
 		}
 		else {
@@ -109,7 +110,7 @@ private:
 
 					if (auto pp = std::get_if<int64_t>(&config["flac_compression_level"]); pp) {
 						if (*pp < 0 || *pp > 8) {
-							std::cerr << "Warning: Invalid flac_compression_level in ini file, ignored." << std::endl;
+							Logger::Warning(std::format(L"Invalid flac_compression_level (0 - 8) in ini file, ignored: '{0}'.", *pp));
 						}
 						else {
 							output_flac_compression_level = static_cast<int>(*pp);
@@ -121,7 +122,7 @@ private:
 
 					if (auto pp = std::get_if<int64_t>(&config["ogg_quality"]); pp) {
 						if (*pp < 0 || *pp > 10) {
-							std::cerr << "Warning: Invalid ogg_quality in ini file, ignored." << std::endl;
+							Logger::Warning(std::format(L"Invalid ogg_quality (0 - 10) in ini file, ignored: '{0}'.", *pp));
 						}
 						else {
 							output_ogg_audio_quality = static_cast<int>(*pp);
@@ -129,7 +130,7 @@ private:
 					}
 				}
 				else {
-					std::cerr << "Warning: Invalid format in ini file, defaulting to ogg." << std::endl;
+					Logger::Warning(std::format("Invalid format in ini file, defaulting to ogg: '{0}'.", *p));
 				}
 			}
 		}
@@ -138,7 +139,7 @@ private:
 	void enum_one_item(fs::path input) {
 		static size_t depth = 0;
 		if (depth >= Max_Recurse_Depth) {
-			std::cout << "Reached Max_Recurse_Depth (" << Max_Recurse_Depth << "), skipping: \"" << input << "\"." << std::endl;
+			Logger::Warning(std::format(L"Reached Max_Recurse_Depth ({0}), skipping: '{1}'.", Max_Recurse_Depth, input.wstring()));
 			return;
 		}
 		TempGuard tg{ depth };
@@ -153,7 +154,7 @@ private:
 			enum_one_file(input);
 		}
 		else {
-			std::cout << "Unknown item, skipping: \"" << input << "\"." << std::endl;
+			Logger::Warning(std::format(L"Unknown item, skipping: '{0}'.", input.wstring()));
 		}
 
 		depth--;
@@ -162,14 +163,14 @@ private:
 
 	void enum_one_file(fs::path filepath) {
 		if (!_sffile.openFromFile(filepath)) {
-			std::cerr << "Warning: Failed to read length, skipping: \'" << filepath << "\'." << std::endl;
+			Logger::Warning(std::format(L"Failed to read length, skipping: '{0}'.", filepath.wstring()));
 			return;
 		}
 		uint64_t sample_cnt = _sffile.getSampleCount() - _sffile.getSampleCount() % _sffile.getChannelCount();
 
 		FilenameRes file_type;
 		if (auto res = filename2keyword(filepath.filename().string()); !res) {
-			std::cerr << "Warning: File \'" << filepath << "\' cannot be handled." << std::endl;
+			Logger::Warning(std::format(L"Failed to handle on file: '{0}'.", filepath.wstring()));
 			return;
 		}
 		else {
@@ -178,9 +179,9 @@ private:
 
 		PAIRDATA& data = g_pairs[file_type.key];
 		if (file_type.is_intro) {
-			std::cout << "Find: File \'" << filepath << "\' as Intro of \'" << file_type.key << "\'." << std::endl;
+			Logger::Info(std::format("Consider '{0}' as the 'intro' part of '{1}'.", filepath.string(), file_type.key));
 			if (data.has_intro) {
-				std::cout << "Warning: Repeated Intro: \'" << filepath << "\' as \'" << file_type.key << "\'." << std::endl;
+				Logger::Warning(std::format("Repeated 'intro' part of '{0}'.", file_type.key));
 				return;
 			}
 			data.has_intro = true;
@@ -188,9 +189,9 @@ private:
 			data.intro_filepath = filepath;
 		}
 		else {
-			std::cout << "Find: File \'" << filepath << "\' as Loop of \'" << file_type.key << "\'." << std::endl;
+			Logger::Info(std::format("Consider '{0}' as the 'loop' part of '{1}'.", filepath.string(), file_type.key));
 			if (data.has_loop) {
-				std::cout << "Warning: Repeated Loop: \'" << filepath << "\' as \'" << file_type.key << "\'." << std::endl;
+				Logger::Warning(std::format("Repeated 'loop' part of '{0}'.", file_type.key));
 				return;
 			}
 			data.has_loop = true;
@@ -204,19 +205,19 @@ private:
 		fs::create_directory(output_dir_path);
 		std::ofstream mylist;
 		for (const std::pair<std::string, PAIRDATA>& i : g_pairs) {
-			std::cout << "Process: \'" << i.first << "\'" << std::endl;
-
 			const std::string& key = i.first;
 			const PAIRDATA& data = i.second;
 
+			Logger::Info(std::format("Processing '{0}'.", key));
+
 			if (!data.has_loop) {
-				std::cout << "!!!! Warning: \'" << key << "\' pair has no loop, skipping." << std::endl;
+				Logger::Warning(std::format("No 'loop' part found of '{0}', skipping.", key));
 				continue;
 			}
 
 			mylist.open("mylist.txt");
 			if (!mylist.is_open()) {
-				std::cout << "!!!! Error: Failed to open mylist.txt when handling \'" << key << "\'." << std::endl;
+				Logger::Error(std::format("Failed to open 'mylist.txt' when handling '{0}', skipping.", key));
 				continue;
 			}
 
